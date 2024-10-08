@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDS = credentials('a930af01-7285-420d-b3b5-66a9b5dd7752')
+        LC_ALL = "en_US.UTF-8"
+        LANG = "en_US.UTF-8"
+        LANGUAGE = "en_US.UTF-8"
+    }
+
+    options {
+        timestamps()
+        skipDefaultCheckout(true)
+    }
+
+    triggers {
+        // Запуск по расписанию: каждый день в 12:00
+        cron('H 12 * * *')
+
+        // Ручной запуск (по умолчанию это всегда возможно)
+    }
+
+    stages {
+
+        stage('Login') {
+            steps {
+                script {
+                    // Логин в Docker Hub
+                    sh '''
+                        /usr/local/bin/docker login -u $DOCKERHUB_CREDS_USR -p $DOCKERHUB_CREDS_PSW
+                    '''
+                }
+            }
+        }
+
+        stage('Pull image') {
+            steps {
+                script {
+                    // Пул последней версии образа
+                    sh '''
+                        /usr/local/bin/docker pull sesh31/mle-lab1-penguin-app:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Run container') {
+            steps {
+                script {
+                    // Запуск контейнера на порте 5001
+                    sh '''
+                        /usr/local/bin/docker run --name mle-cd-template -p 5001:5001 -d sesh31/mle-lab1-penguin-app:latest
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Остановка контейнера и выход из Docker Hub
+                sh '''
+                    /usr/local/bin/docker stop mle-cd-template || true
+                    /usr/local/bin/docker rm mle-cd-template || true
+                    /usr/local/bin/docker logout
+                    echo "change"
+                '''
+            }
+        }
+    }
+}

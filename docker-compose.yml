@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  penguin-app:
+    build: .
+    image: sesh31/mle-lab1-penguin-app:latest
+    command: sh -c "python src/preprocess.py && python src/app.py"
+    ports:
+      - "5001:5001"
+    environment:
+      - DATABASE_URL=postgresql://penguin_user:penguin_password@postgres:5432/penguins_db
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: penguin_user
+      POSTGRES_PASSWORD: penguin_password
+      POSTGRES_DB: penguins_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

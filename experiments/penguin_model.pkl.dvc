@@ -1,0 +1,5 @@
+outs:
+- md5: 2dfdb69e4c647ab7bb5a115163664779
+  size: 2673
+  hash: md5
+  path: penguin_model.pkl

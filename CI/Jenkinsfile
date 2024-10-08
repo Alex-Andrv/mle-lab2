@@ -1,0 +1,123 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDS=credentials('a930af01-7285-420d-b3b5-66a9b5dd7752')
+        LC_ALL = "en_US.UTF-8"
+        LANG    = "en_US.UTF-8"
+        LANGUAGE = "en_US.UTF-8"
+    }
+
+    options {
+        timestamps()
+        skipDefaultCheckout(true)
+    }
+
+    stages {
+        stage('Clone github repository') {
+            steps {
+                cleanWs()
+                sh '''
+                    git clone -b main https://github.com/Alex-Andrv/mle-lab1.git
+                '''
+            }
+        }
+
+        stage('Checkout repo dir') {
+            steps {
+                sh '''
+                    cd mle-lab1
+                    ls -la
+                '''
+            }
+        }
+
+        stage('Login') {
+            steps {
+                sh 'export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker --version'
+                sh 'echo $DOCKERHUB_CREDS_USR'
+                sh '''
+                    echo $DOCKERHUB_CREDS_PSW | /usr/local/bin/docker login -u $DOCKERHUB_CREDS_USR --password-stdin
+                '''
+            }
+        }
+
+        stage('Create and run docker container') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                            cd mle-lab1
+                            export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker-compose build
+                        '''
+                    } finally {
+                        sh '''
+                            cd mle-lab1
+                            export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker-compose up -d
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Checkout container logs') {
+            steps {
+                dir("mle-template") {
+                    sh '''
+                        ls
+                        export PATH=$PATH:/usr/local/bin
+                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab1-penguin-app")
+                        echo $containerId
+
+                    '''
+                }
+            }
+        }
+
+        // Этап для остановки и удаления контейнера перед запуском CD pipeline
+        stage('Stop and Remove Docker Container') {
+            steps {
+                script {
+                    sh '''
+                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab1-penguin-app")
+                        if [ ! -z "$containerId" ]; then
+                            /usr/local/bin/docker stop $containerId
+                            /usr/local/bin/docker rm $containerId
+                            echo "Container stopped and removed"
+                        else
+                            echo "No container running with the name mle-lab1-penguin-app"
+                        fi
+                    '''
+
+                }
+            }
+        }
+
+        stage('Push') {
+            steps {
+                sh '''
+                    export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker push sesh31/mle-lab1-penguin-app:latest
+                '''
+            }
+        }
+         // Финальный этап для вызова CD pipeline
+        stage('Trigger CD Pipeline') {
+            steps {
+                script {
+                    // Запуск CD pipeline
+                    build job: 'CD', propagate: true
+                }
+            }
+        }
+    }
+
+
+    post {
+        always {
+            sh '''
+                cd mle-lab1
+                export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker logout
+            '''
+        }
+    }
+}
