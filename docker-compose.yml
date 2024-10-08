@@ -3,7 +3,7 @@ version: '3.8'
 services:
   penguin-app:
     build: .
-    image: sesh31/mle-lab1-penguin-app:latest
+    image: sesh31/mle-lab2-penguin-app:latest
     command: sh -c "python src/preprocess.py && python src/app.py"
     ports:
       - "5001:5001"

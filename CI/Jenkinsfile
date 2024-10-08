@@ -18,7 +18,7 @@ pipeline {
             steps {
                 cleanWs()
                 sh '''
-                    git clone -b main https://github.com/Alex-Andrv/mle-lab1.git
+                    git clone -b main https://github.com/Alex-Andrv/mle-lab2.git
                 '''
             }
         }
@@ -26,7 +26,7 @@ pipeline {
         stage('Checkout repo dir') {
             steps {
                 sh '''
-                    cd mle-lab1
+                    cd mle-lab2
                     ls -la
                 '''
             }
@@ -47,12 +47,12 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            cd mle-lab1
+                            cd mle-lab2
                             export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker-compose build
                         '''
                     } finally {
                         sh '''
-                            cd mle-lab1
+                            cd mle-lab2
                             export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker-compose up -d
                         '''
                     }
@@ -66,7 +66,7 @@ pipeline {
                     sh '''
                         ls
                         export PATH=$PATH:/usr/local/bin
-                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab1-penguin-app")
+                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab2-penguin-app")
                         echo $containerId
 
                     '''
@@ -79,13 +79,13 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab1-penguin-app")
+                        containerId=$(/usr/local/bin/docker ps -qf "name=mle-lab2-penguin-app")
                         if [ ! -z "$containerId" ]; then
                             /usr/local/bin/docker stop $containerId
                             /usr/local/bin/docker rm $containerId
                             echo "Container stopped and removed"
                         else
-                            echo "No container running with the name mle-lab1-penguin-app"
+                            echo "No container running with the name mle-lab2-penguin-app"
                         fi
                     '''
 
@@ -96,7 +96,7 @@ pipeline {
         stage('Push') {
             steps {
                 sh '''
-                    export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker push sesh31/mle-lab1-penguin-app:latest
+                    export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker push sesh31/mle-lab2-penguin-app:latest
                 '''
             }
         }
@@ -115,7 +115,7 @@ pipeline {
     post {
         always {
             sh '''
-                cd mle-lab1
+                cd mle-lab2
                 export PATH=$PATH:/usr/local/bin && /usr/local/bin/docker logout
             '''
         }
